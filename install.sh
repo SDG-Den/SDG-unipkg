@@ -1,15 +1,13 @@
 #!/bin/bash
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-
-PKG_INDEX=unipkg
+# template install script
 LOCALDIR=unipkg
 DOCDIR=unipkg
 TIPDIR=unipkg
 entrypoint=unipkg-cli
 command=unipkg
 
-WORKDIR="$HOME/.cache/SDG-PKG/$PKG_INDEX"
+WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 clear
 
@@ -24,6 +22,7 @@ else
     echo "dependency check failed, please ensure fzf, sudo and bash are installed"
     exit 1
 fi
+
 echo ""
 echo "there are two pre-set configurations for managers available, stable and dev"
 echo "stable contains only human-written, human-verified configurations"
@@ -40,6 +39,18 @@ while [[ "$choice" != "stable" && "$choice" != "dev" ]]; do
     fi
 done
 
+echo "installing scripts"
+rm -rf ~/.local/$LOCALDIR
+mkdir -p ~/.local/$LOCALDIR
+cp -r "$WORKDIR/local/"* ~/.local/
+
+echo "making scripts executable"
+chmod -R +x ~/.local/$LOCALDIR/
+
+echo "linking to /usr/bin"
+sudo ln -sf "$HOME/.local/$LOCALDIR/$entrypoint" /usr/bin/$command
+
+echo "installing configuration"
 rm -rf ~/.config/unipkg
 mkdir -p ~/.config/unipkg
 
@@ -51,24 +62,14 @@ fi
 
 if [ "$choice" == "stable" ]; then
     echo "installing stable managers.csv"
-    cp "$WORKDIR/config/unipkg/managers.csv" ~/.config/unipkg/managers.csv
+    cp "$WORKDIR/config/unipkg/managers-stable.csv" ~/.config/unipkg/managers.csv
     cp "$WORKDIR/config/unipkg/unipkg.conf" ~/.config/unipkg/unipkg.conf
 fi
-
-echo "installing scripts"
-rm -rf ~/.local/$LOCALDIR
-mkdir -p ~/.local/$LOCALDIR
-cp -r "$WORKDIR/local/$LOCALDIR/"* ~/.local/$LOCALDIR/
-
-echo "making scripts executable"
-chmod -R +x ~/.local/$LOCALDIR/
-
-echo "linking to /usr/bin"
-sudo ln -sf "$HOME/.local/$LOCALDIR/$entrypoint" /usr/bin/$command
 
 echo "installing documentation"
 mkdir -p ~/.local/docs/$DOCDIR
 cp -r "$WORKDIR/docs/"* ~/.local/docs/
 
-echo "running unipkg-generate"
-bash -c ~/.local/$LOCALDIR/unipkg-generate
+echo "installing tips"
+mkdir -p ~/.local/tips/$TIPDIR
+cp -r "$WORKDIR/tips/"* ~/.local/tips/

@@ -1,12 +1,13 @@
 #!/bin/bash
 
+# template build script
 LOCALDIR=unipkg
 DOCDIR=unipkg
 TIPDIR=unipkg
 entrypoint=unipkg-cli
 command=unipkg
 
-WORKDIR=$(pwd)
+WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 rm -rf "$HOME/.local/docs/$DOCDIR" "$HOME/.local/tips/$TIPDIR" "$HOME/.local/$LOCALDIR"
 
