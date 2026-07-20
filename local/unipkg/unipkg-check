@@ -1,0 +1,35 @@
+#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# no args output for help
+if [[ $# -eq 0 ]]; then
+    cat <<EOF
+usage: unipkg check <index>
+
+example: unipkg check apt - checks if apt is available
+
+checks whether the package manager is available or not and lists the location of the binary
+note: this command *will* detect a package manager as installed if a symlink with the same command name exists
+this leads to for example yum being detected on modern fedora, as they symlink /usr/bin/yum to /usr/bin/dnf5
+
+EOF
+    exit 1
+fi
+# input handling
+PACKAGE_MANAGER="$1"
+MGRS=~/.config/unipkg/managers.csv
+
+# get data from managers.csv
+CMD=$(cat "$MGRS" | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f3)
+DisplayName=$(cat $MGRS | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f2)
+STRIPPED_CMD=$(echo "$CMD" | awk '{print $1}')
+
+# run check
+echo -e "[\e[36mCHECK\e[0m] checking if \e[33m$DisplayName\e[0m is installed..."
+if command -v $STRIPPED_CMD ; then
+echo -e "[\e[32mPASSED\e[0m] $DisplayName is installed"
+exit 0
+else
+echo -e "[\e[31mFAILED\e[0m] $DisplayName is not installed"
+exit 1
+fi

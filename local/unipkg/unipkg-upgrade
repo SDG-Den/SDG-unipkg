@@ -1,0 +1,50 @@
+#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# show help if no argument is given
+if [[ $# -eq 0 ]]; then
+    cat <<EOF
+usage: unipkg upgrade <index>
+
+example: unipkg upgrade zypper
+
+runs the "update all packages" command for the provided package manager
+
+unipkg upgrade also accepts the indexes "omni", "any" and "all".
+which will run through the package managers in your unipkg.conf and run a full upgrade for each one
+EOF
+    exit 1
+fi
+
+# input handling
+PACKAGE_MANAGER="$1"
+MGRS=~/.config/unipkg/managers.csv
+CONF=$(cat ~/.config/unipkg/unipkg.conf)
+
+# inform user
+echo "Selected package manager: $PACKAGE_MANAGER"
+
+# handle omni case
+case $PACKAGE_MANAGER in
+    omni|any|all)
+      # loop over unipkg.conf
+      while read -r LINE; do
+      # extract info
+      CMD=$(cat "$MGRS" | grep -e "^$LINE" | cut -d ',' -f8)
+      DisplayName=$(cat $MGRS | grep -e "^$LINE" | cut -d ',' -f2)
+      # inform user
+      echo -e "[\e[36mACTION\e[0m] upgrading packages with $DisplayName"
+      # run command
+      eval "$CMD"
+      done <<< $CONF
+      ;;
+    *)
+      # extract info
+      CMD=$(cat "$MGRS" | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f8)
+      DisplayName=$(cat $MGRS | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f2)
+      # inform user
+      echo -e "[\e[36mACTION\e[0m] upgrading packages with $DisplayName"
+      # run command
+      eval "$CMD"
+      ;;
+esac

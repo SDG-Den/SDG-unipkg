@@ -1,0 +1,50 @@
+#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# provide help if no arguments are provided 
+if [[ $# -eq 0 ]]; then
+    cat <<EOF
+usage: unipkg update <index>
+
+example: unipkg update apt - updates the apt cache
+
+updates the local cache for package managers that require this, will do nothing for package managers that do not need to update a local cache.
+
+unipkg update also accepts the indexes "omni", "any" and "all".
+which will run through the package managers in your unipkg.conf and run a cache update for each one
+EOF
+    exit 1
+fi
+
+# input handling
+PACKAGE_MANAGER="$1"
+MGRS=~/.config/unipkg/managers.csv
+CONF=$(cat ~/.config/unipkg/unipkg.conf)
+
+# inform user
+echo "Selected package manager: $PACKAGE_MANAGER"
+
+# handle omni case
+case $PACKAGE_MANAGER in
+    omni|any|all)
+      # loop over unipkg.conf
+      while read -r LINE; do
+      # extract info
+      CMD=$(cat "$MGRS" | grep -e "^$LINE" | cut -d ',' -f10)
+      DisplayName=$(cat $MGRS | grep -e "^$LINE" | cut -d ',' -f2)
+      # inform user
+      echo -e "[\e[36mACTION\e[0m] updating cache for $DisplayName"
+      # run command
+      eval "$CMD"
+      done <<< $CONF
+      ;;
+    *)
+      # extract info
+      CMD=$(cat "$MGRS" | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f10)
+      DisplayName=$(cat $MGRS | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f2)
+      # inform user
+      echo -e "[\e[36mACTION\e[0m] updating cache for $DisplayName"
+      # run command
+      eval "$CMD"
+      ;;
+esac

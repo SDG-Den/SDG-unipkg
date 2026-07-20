@@ -1,0 +1,29 @@
+#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# present help if no arguments are provided
+if [[ $# -lt 1 ]]; then
+    cat <<EOF
+usage: unipkg info <index> <package>
+
+example: unipkg info pacman sl - lists info about the package "sl" from the pacman repositories
+
+lists details for a package in a specific package manager.
+
+EOF
+    exit 1
+fi
+
+# input handling
+PACKAGE_MANAGER="$1"
+shift 
+PACKAGE_LIST=("$@")
+MGRS=~/.config/unipkg/managers.csv
+
+# core function
+CMD=$(cat "$MGRS" | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f4)
+DisplayName=$(cat $MGRS | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f2)
+echo ""
+echo -e "[\e[36mACTION\e[0m] listing \e[33m$DisplayName\e[0m information for: $PACKAGE_LIST"
+echo ""
+eval "$CMD $PACKAGE_LIST"

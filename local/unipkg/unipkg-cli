@@ -1,0 +1,169 @@
+#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+
+# set versioning
+export UNIPKG_VERSION="0.2.2"
+
+# dependency check for sudo
+if ! command -v sudo &>/dev/null; then
+    echo "Error: 'sudo' is not installed. Install it with your package manager."
+    exit 1
+fi
+
+HELPOPTS="help
+check
+indexes
+versions
+generate
+info
+list
+install
+uninstall
+update
+upgrade
+launch-tui
+help-tui
+edit-config
+"
+
+# --- Input Handling ---
+COMMAND="$1"
+index="$2"
+shift 2 
+PACKAGE_LIST=("$@")
+
+# main case 
+case $COMMAND in
+    check)
+        # calls the check script on "unipkg check <index>"
+        echo -e "[\e[36munipkg\e[0m] running check"
+        bash -c "~/.local/unipkg/unipkg-check $index"
+        ;;
+    generate)
+        # calls the generate script on "unipkg generate"
+        echo -e "[\e[36munipkg\e[0m] running generate"
+        bash -c "~/.local/unipkg/unipkg-generate"
+        ;;
+    indexes)
+        # calls the indexes script on "unipkg indexes"
+        echo -e "[\e[36munipkg\e[0m] showing indexes"
+        bash -c "~/.local/unipkg/unipkg-indexes"
+        ;;
+    versions|"--version")
+        # calls the versions script on "unipkg versions" and "unipkg --version"
+        echo -e "[\e[36munipkg\e[0m] showing versions"
+        bash -c "~/.local/unipkg/unipkg-versions"
+        ;;
+    info)
+        # calls the info script on "unipkg info <index> <package>"
+        echo -e "[\e[36munipkg\e[0m] showing info"
+        bash -c "~/.local/unipkg/unipkg-info $index $PACKAGE_LIST"
+        ;;
+    install)
+        # calls the install script on "unipkg install <index> <packages>"
+        echo -e "[\e[36munipkg\e[0m] installing packages"
+        bash -c "~/.local/unipkg/unipkg-install $index ${PACKAGE_LIST[*]}"
+        ;;
+    uninstall)
+        # calls the uninstall script on "unipkg uninstall <index> <package>"
+        echo -e "[\e[36munipkg\e[0m] uninstalling packages"
+        bash -c "~/.local/unipkg/unipkg-uninstall $index ${PACKAGE_LIST[*]}"
+        ;;
+    update)
+        # calls the update script on "unipkg update <index>"
+        echo -e "[\e[36munipkg\e[0m] updating cache"
+        bash -c "~/.local/unipkg/unipkg-update $index"
+        ;;
+    upgrade)
+        # calls the upgrade script on "unipkg upgrade <index>"
+        echo -e "[\e[36munipkg\e[0m] upgrading system"
+        bash -c "~/.local/unipkg/unipkg-upgrade $index"
+        ;;
+    list)
+        # subcase for different list options
+        case $index in 
+            available)
+                # calls list on "unipkg list available <index>"
+                bash -c "~/.local/unipkg/unipkg-list '$index'"
+                ;;
+            installed)
+                # calls list-installed on "unipkg list installed <index>"
+                bash -c "~/.local/unipkg/unipkg-list-installed $index"
+                ;;
+            upgradable)
+                # calls list-upgradable on "unipkg list upgradable <index>"
+                bash -c "~/.local/unipkg/unipkg-list-upgradable $index"
+                ;;
+        esac
+        ;;
+    launch-tui)
+        # launches the TUI
+        bash -c "~/.local/unipkg/unipkg-tui"
+        
+        ;;
+    help-tui)
+        # launches a help TUI
+        HELPSEL=$(echo "$HELPOPTS" | fzf --layout=reverse --preview-window=down:70% --preview-label="press enter to output the help for this command to terminal" --preview="~/.local/unipkg/unipkg-help {}" --bind='esc:abort')
+        bash -c "~/.local/unipkg/unipkg-help $HELPSEL"
+        ;;
+    edit-config)
+        # opens the config in the editor.
+        sudo $EDITOR ~/.config/unipkg/unipkg.conf
+        ;;
+    list-config)
+    	bash -c "~/.local/unipkg/unipkg-listconf $index"
+    	;;
+    help)
+        bash -c "~/.local/unipkg/unipkg-help $index"
+        ;;
+    *)
+        # shows help
+        echo -e "[\e[36munipkg\e[0m] Welcome to unipkg"
+        echo ""
+        echo "installed version: $UNIPKG_VERSION"
+        echo ""
+        echo -e "[\e[36munipkg\e[0m] usage:"
+        echo ""
+        echo "unipkg [COMMAND] <index> <package1> <package2>..."
+        echo ""
+        echo -e "[\e[36mGeneral Commands\e[0m]"
+        echo "check - checks if the index is available on your system"
+        echo "indexes - shows the list of indexes with their full names"
+        echo "help - shows this help page"
+        echo "versions - shows the versions for all configured package managers"
+        echo "edit-config - opens the unipkg.conf in your terminal text editor (requires \$EDITOR to be set, currently: $EDITOR)"
+        echo "generate - generates a unipkg.conf file by checking what package managers are installed. this will overwrite your unipkg.conf"
+        echo "launch-tui - opens the TUI for unipkg (requires FZF)" 
+        echo "help-tui - launched a FZF TUI for showing the various commands"
+        echo ""
+        echo -e "[\e[36mInformation Commands\e[0m]"
+        echo "info - gets info from a specific index about a specified package"
+        echo "list available - lists available packages on a specific index"
+        echo "list installed - lists packages installed with a specific index"
+        echo "list upgradable - lists packages that can be upgraded with a specific index"
+        echo ""
+        echo -e "[\e[36mPackage Management Commands\e[0m]"
+        echo "install - installs the provided packages with the provided index"
+        echo "uninstall - removes the provided packages with the provided index"
+        echo "update - updates the package cache for the provided index"
+        echo "upgrade - upgrades all packages for a specific index"
+        echo ""
+        echo -e "[\e[36mSpecial Indexes\e[0m]"
+        echo "unipkg supports three special indexes that are always active"
+        echo "these are \"any\", \"all\" and \"omni\""
+        echo ""
+        echo "when a command is run with *any* of these indexes, the command will fetch your whole unipkg.conf"
+        echo "the command will either loop over all of the package managers in order, or loop until it succeeds if the operation should only be done once (for example, install/uninstall)"
+        echo "do use these with caution, as they *can* brick things if you do not have your unipkg.conf set up correctly"
+        echo ""
+        echo -e "[\e[36munipkg.conf\e[0m]"
+        echo "the unipkg.conf file is simply a list of indexes that gets used in order."
+        echo "no package manager will ever be used automatically if it is not in your unipkg.conf"
+        echo "you can manually include/exclude package managers and re-organize the order in which they get used."
+        echo "it is highly recommended to put your *primary package manager* at the top of the file"
+        echo ""
+        echo "the unipkg.conf file is located at ~/.config/unipkg/unipkg.conf"
+        echo "and can be edited using the command unipkg edit-config"
+        ;;
+esac

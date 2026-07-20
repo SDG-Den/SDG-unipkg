@@ -1,0 +1,106 @@
+#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+
+
+
+# main-menu
+while $true; do
+    MMOPTS="Exit
+Maintenance
+Lists
+Install
+Uninstall
+Update"
+    MAINTOPTS="Check
+Indexes
+Versions
+Generate
+Edit unipkg.conf
+Help Menu
+"
+    HELPOPTS="help
+check
+indexes
+versions
+generate
+info
+list
+install
+uninstall
+update
+upgrade
+launch-tui
+help-tui
+edit-config
+"
+
+    CHECKOPTS=$(cat ~/.config/unipkg/managers.csv | sed 1d | cut -d ',' -f1)
+
+
+    
+    MMSEL=$(echo "$MMOPTS" | fzf --prompt="Select an Option" --layout=reverse --bind='esc:abort')
+    [[ -z "$MMSEL" ]] && break
+
+    echo "selected: $MMSEL"
+    case $MMSEL in
+        Maintenance)
+            MAINTSEL=$(echo "$MAINTOPTS" | fzf --prompt="Select an Option" --layout=reverse --bind='esc:abort')
+            case $MAINTSEL in
+                Check)
+                    CHECKSEL=$(echo "$CHECKOPTS" | fzf --prompt="Select an Option" --layout=reverse --preview-window=down:50% --preview="~/.local/unipkg/unipkg-check {}" --bind='esc:abort')
+                    ;;
+                Indexes)
+                    /bin/bash -c ~/.local/unipkg/unipkg-indexes
+                    echo "press any key to return"
+                    read -n 1 
+                    ;;
+                Versions)
+                    /bin/bash -c ~/.local/unipkg/unipkg-versions
+                    echo "press any key to return"
+                    read -n 1 
+                    ;;
+                Generate)
+                    clear
+                    /bin/bash -c ~/.local/unipkg/unipkg-generate
+                    echo "press any key to return"
+                    read -n 1 
+                    ;;
+                "Help Menu")
+                    HELPSEL=$(echo "$HELPOPTS" | fzf --layout=reverse --preview-window=down:70% --preview="~/.local/unipkg/unipkg-help {}" --bind='esc:abort')
+                    ;;
+                "Edit unipkg.conf")
+                    sudo $EDITOR ~/.config/unipkg/unipkg.conf
+                    ;;
+            esac
+            ;;
+        Lists)
+            LISTSEL=$(cat ~/.config/unipkg/unipkg.conf | fzf --layout=reverse --preview-window=left:50% --preview="~/.local/unipkg/unipkg-list-installed {1}" --preview-label='alt+i: list installed | alt+u: list upgradable | alt+l: list available' --bind='alt-i:change-preview:~/.local/unipkg/unipkg-list-installed {1}' --bind='alt-u:change-preview:~/.local/unipkg/unipkg-list-upgradable {1}' --bind='alt-l:change-preview:~/.local/unipkg/unipkg-list {1}' --bind='esc:abort') 
+            ;;
+        Install)
+            MANSEL=$(cat ~/.config/unipkg/unipkg.conf | fzf --layout=reverse --bind='esc:abort')
+            [[ -z "$MANSEL" ]] && continue
+            PKG=$(bash -c "~/.local/unipkg/unipkg-list '$MANSEL'" | sed 1d | fzf --multi --layout=reverse --preview-window=left:50% --preview="~/.local/unipkg/unipkg-info $MANSEL {}" --bind='esc:abort')
+            [[ -z "$PKG" ]] && continue
+            PKGS=$(echo "$PKG" | tr '\n' ' ')
+            echo "packages: $PKGS"
+            bash -c "~/.local/unipkg/unipkg-install $MANSEL $PKGS"
+            ;;
+        Uninstall)
+            MANSEL=$(cat ~/.config/unipkg/unipkg.conf | fzf --layout=reverse --bind='esc:abort')
+            [[ -z "$MANSEL" ]] && continue
+            PKG=$(bash -c "~/.local/unipkg/unipkg-list-installed $MANSEL" | sed 1d | fzf --layout=reverse --preview-window=left:50% --preview="~/.local/unipkg/unipkg-info $MANSEL {}" --bind='esc:abort')
+            [[ -z "$PKG" ]] && continue
+            bash -c "~/.local/unipkg/unipkg-uninstall $MANSEL $PKG"
+            ;;
+        Update)
+            UPDATESEL=$(cat ~/.config/unipkg/unipkg.conf | fzf --layout=reverse --preview-window=left:50% --preview="~/.local/unipkg/unipkg-list-upgradable {1}" --preview-label='alt+u: update package cache' --bind='alt-u:execute(~/.local/unipkg/unipkg-update {1})' --bind='esc:abort')
+            [[ -z "$UPDATESEL" ]] && continue
+            bash -c "~/.local/unipkg/unipkg-upgrade $UPDATESEL"
+            ;;
+        Exit)
+            break
+            ;;
+    esac
+    sleep 1
+done

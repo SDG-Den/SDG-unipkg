@@ -1,0 +1,71 @@
+#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# present help if command is run with no arguments
+if [[ $# -lt 1 ]]; then
+    cat <<EOF
+usage: unipkg install <index> <package> [package2]..
+
+example: unipkg install xbps networkmanager - installs networkmanager using xbps package manager
+
+installs packages using the provided package manager. accepts a space-separated list of packages
+
+unipkg install also accepts the indexes "omni", "any" and "all".
+which will run through the package managers in your unipkg.conf and attempt to install the requested packages with each one
+until it succeeds or runs out of package managers to try.
+EOF
+    exit 1
+fi
+
+# input handling
+PACKAGE_MANAGER="$1"
+shift
+PACKAGE_LIST=("$@")
+MGRS=~/.config/unipkg/managers.csv
+CONF=$(cat ~/.config/unipkg/unipkg.conf)
+
+echo "Selected package manager: $PACKAGE_MANAGER"
+echo "Packages to process: ${PACKAGE_LIST[*]}"
+
+
+
+# logic case for omni
+case $PACKAGE_MANAGER in
+    omni|any|all)
+      # loop over package managers in unipkg.conf
+      while read -r LINE; do
+      # extract info from managers.csv for this package manager
+      INSTALL_CMD=$(cat "$MGRS" | grep -e "^$LINE" | cut -d ',' -f5)
+      DisplayName=$(cat $MGRS | grep -e "^$LINE" | cut -d ',' -f2)
+      FULL_CMD="$INSTALL_CMD ${PACKAGE_LIST[*]}"
+
+      echo -e "[\e[36mACTION\e[0m] attempting installation using \e[33m$DisplayName\e[0m"
+      echo "running the following command: $FULL_CMD"
+      # attempt to run installation and check result
+      if bash -c "$FULL_CMD" ; then
+        echo -e "[\e[32mSUCCESS\e[0m] successfully installed packages using $DisplayName"
+        # exit the script if installation successful
+        exit 0
+      else
+        echo -e "[\e[31mFAIL\e[0m] failed installation using $DisplayName"
+        # will continue to loop from here
+      fi
+      done <<< $CONF
+      echo -e "[\e[31mFAIL\e[0m] Package was not installed."
+      # should only be reached if no package manager has this package
+      ;;
+    *)
+      # handling for specific package managers.
+      # extract info from managers.csv
+      CMD=$(cat "$MGRS" | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f5)
+      DisplayName=$(cat $MGRS | grep -e "^$PACKAGE_MANAGER" | cut -d ',' -f2)
+      FULL_CMD="$CMD ${PACKAGE_LIST[*]}"
+      # inform user
+      echo ""
+      echo -e "[\e[36mACTION\e[0m] using \e[33m$DisplayName\e[0m to install the following software:"
+      echo "${PACKAGE_LIST[*]}"
+      echo ""
+      # run install command
+      bash -c "$FULL_CMD"
+    ;;
+esac
