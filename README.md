@@ -1,6 +1,5 @@
-# unipkg (v2)
+# unipkg
 
-This is the v2 SDG-PKG packaging of unipkg. The original source lives in `unipkg-old/`.
 
 unipkg is a package manager agnostic wrapper that supports multiple package managers on one system. 
 
