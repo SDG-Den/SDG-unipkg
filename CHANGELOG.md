@@ -1,3 +1,9 @@
+#  unipkg update 0.3.2
+    
+## changelog 0.3 > 0.3.2
+
+updated docs, added new listconf, added tips
+
 #  unipkg update 0.3
     
 ## changelog 0.1 > 0.3

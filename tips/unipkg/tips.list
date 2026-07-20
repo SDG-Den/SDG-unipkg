@@ -1,0 +1,10 @@
+[unipkg]: Run `unipkg` with no arguments to see version and command overview
+[unipkg]: Use `unipkg launch-tui` for the interactive FZF-based package manager menu
+[unipkg]: Run `unipkg generate` to auto-detect your installed managers and generate `unipkg.conf`
+[unipkg]: Full system update: `unipkg update all && unipkg upgrade all`
+[unipkg]: Browse available packages: `unipkg list available <index>` (e.g., `unipkg list available pacman`)
+[unipkg]: Use `unipkg install all <package>` to try every configured manager until one succeeds
+[unipkg]: Reorder managers in `~/.config/unipkg/unipkg.conf` — first entry is tried first
+[unipkg]: Never run unipkg as root — it escalates via sudo internally
+[unipkg]: Check installed packages: `unipkg list installed all`
+[unipkg]: List configured managers: `unipkg indexes`

@@ -134,6 +134,16 @@ case $command in
         echo ""
         echo "will provide the versions for all enabled package managers as well as unipkg itself."
         ;;
+    list-config)
+        echo -e "[\e[36munipkg help\e[0m]"
+        echo ""
+        echo "usage: unipkg list-config <index>"
+        echo ""
+        echo "example: unipkg list-config pacman"
+        echo ""
+        echo "shows the raw command configuration for a specific package manager index."
+        echo "without an index or with \"any\"/\"all\"/\"omni\", lists the display names of all configured managers."
+        ;;
     edit-config)
         echo -e "[\e[36munipkg help\e[0m]"
         echo ""
@@ -153,6 +163,7 @@ case $command in
         echo "generate - generates unipkg.conf"
         echo "help - provides information about unipkg commands"
         echo "indexes - lists available indexes"
+        echo "list-config - shows the raw command config for a specific index"
         echo "edit-config - opens the config in your editor (current: $EDITOR)"
         echo "launch-tui - opens the interactive FZF tui"
         echo "help-tui - opens a FZF tui for browsing the unipkg commands"
