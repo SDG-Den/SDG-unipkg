@@ -85,15 +85,15 @@ case $COMMAND in
         case $index in 
             available)
                 # calls list on "unipkg list available <index>"
-                bash -c "~/.local/unipkg/unipkg-list '$index'"
+                bash -c "~/.local/unipkg/unipkg-list ${PACKAGE_LIST[0]}"
                 ;;
             installed)
                 # calls list-installed on "unipkg list installed <index>"
-                bash -c "~/.local/unipkg/unipkg-list-installed $index"
+                bash -c "~/.local/unipkg/unipkg-list-installed ${PACKAGE_LIST[0]}"
                 ;;
             upgradable)
                 # calls list-upgradable on "unipkg list upgradable <index>"
-                bash -c "~/.local/unipkg/unipkg-list-upgradable $index"
+                bash -c "~/.local/unipkg/unipkg-list-upgradable ${PACKAGE_LIST[0]}"
                 ;;
         esac
         ;;

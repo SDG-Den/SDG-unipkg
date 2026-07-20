@@ -30,7 +30,7 @@ pmm,Bedrock PMM,brl version,pmm -Si,sudo pmm -S,pmm -Sl,pmm -S -u -q 2>&1 | grep
 brl-fetch,Bedrock Stratum Fetch,brl version,brl fetch --list,sudo brl fetch,brl fetch --list,echo 'not supported',sudo brl update,sudo brl remove,sudo brl update,brl list,Manual,Untested
 cpan,CPAN Perl,cpan --version,cpan -D,sudo cpan -i,cpan -l,sudo cpan -O,sudo cpan -u,sudo cpan -U,sudo cpan -u,cpan -l,Manual,Untested
 paru,Paru AUR Helper,paru --version,paru -Si,paru -S --noconfirm,paru -Slq,paru -Qua,paru -Syu --noconfirm,paru -R --noconfirm,paru -Sy,paru -Q,Manual,Untested
-aura,Aura Package Manager,aura --version,aura -Ai,aura -A,aura -As '' 2>&1 || aura -As '.' 2>&1 || echo 'no packages',aura -Au,aura -Ayu,aura -R,aura -Sy,aura -Q,Manual,Untested
+aura,Aura Package Manager,aura --version,aura -A -i,aura -A,aura -A --search a 2>/dev/null | awk '{print $1}' | cut -d'/' -f2,aura -Au,aura -Ayu,aura -R,aura -Sy,aura -Q,Manual,Untested
 pikaur,Pikaur AUR Helper,pikaur --version,pikaur -Si,pikaur -S --noconfirm,pikaur -Slq,pikaur -Qua,pikaur -Syu --noconfirm,pikaur -R --noconfirm,pikaur -Sy,pikaur -Q,Manual,Untested
 trizen,Trizen AUR Package Manager,trizen --version,trizen -Si,trizen -S --noedit,trizen -Slq,trizen -Qu,trizen -Syu --noedit,trizen -R,trizen -Sy,trizen -Q,Manual,Untested
 npm,NPM Node.js,npm --version,npm info,sudo npm install -g,npm search --long false 2>/dev/null | cut -d' ' -f1,npm outdated -g,sudo npm update -g,sudo npm uninstall -g,sudo npm update -g,npm list -g --depth=0 | cut -d' ' -f2 | sed 1d,Manual,Untested
