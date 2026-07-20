@@ -12,8 +12,8 @@ echo ""
 
 # loop over managers in managers.csv and present data to user.
 while read -r LINE; do
-    index=$(cat "$MGRS" | grep -e "^$LINE" | cut -d ',' -f1)
-    DisplayName=$(cat $MGRS | grep -e "^$LINE" | cut -d ',' -f2)
-    Attribution=$(cat $MGRS | grep -e "^$LINE" | cut -d ',' -f12)
+    index=$(cat "$MGRS" | grep -e "^$LINE," | cut -d ',' -f1)
+    DisplayName=$(cat $MGRS | grep -e "^$LINE," | cut -d ',' -f2)
+    Attribution=$(cat $MGRS | grep -e "^$LINE," | cut -d ',' -f12)
     echo "$index - $DisplayName (provided by: $Attribution)"
 done <<< $CONF
