@@ -1,0 +1,179 @@
+#!/bin/bash
+
+CACHE_DIR="$HOME/.cache/xbps-src-cli"
+VOID_PKGS_DIR="$CACHE_DIR/void-packages"
+INSTALLED_LIST="$CACHE_DIR/installed.list"
+XBPS_BIN="strat void xbps-install"
+XBPS_QUERY="strat void xbps-query"
+XBPS_REMOVE="strat void xbps-remove"
+
+ensure_void_packages() {
+    if [ ! -d "$VOID_PKGS_DIR" ]; then
+        mkdir -p "$CACHE_DIR"
+        echo "Cloning void-packages (this may take a while)..."
+        git clone https://github.com/void-linux/void-packages.git "$VOID_PKGS_DIR"
+    fi
+    if [ ! -f "$VOID_PKGS_DIR/masterdir/.bootstrap_done" ]; then
+        echo "Running binary-bootstrap (one-time setup)..."
+        cd "$VOID_PKGS_DIR"
+        ./xbps-src binary-bootstrap
+        touch "$VOID_PKGS_DIR/masterdir/.bootstrap_done"
+    fi
+}
+
+track_installed() {
+    local pkg="$1"
+    local action="$2"
+    mkdir -p "$CACHE_DIR"
+    touch "$INSTALLED_LIST"
+    if [ "$action" = "add" ]; then
+        if ! grep -qx "$pkg" "$INSTALLED_LIST" 2>/dev/null; then
+            echo "$pkg" >> "$INSTALLED_LIST"
+        fi
+    elif [ "$action" = "remove" ]; then
+        local tmpfile=$(mktemp)
+        grep -vx "$pkg" "$INSTALLED_LIST" > "$tmpfile" 2>/dev/null
+        mv "$tmpfile" "$INSTALLED_LIST"
+    fi
+}
+
+case "${1:-help}" in
+    version|--version)
+        if [ -d "$VOID_PKGS_DIR" ]; then
+            echo "xbps-src-cli: void-packages $(git -C $VOID_PKGS_DIR rev-parse --short HEAD 2>/dev/null)"
+        else
+            echo "xbps-src-cli: not initialized (run 'xbps-src update')"
+        fi
+        echo "xbps: $(strat void xbps-query --version 2>&1)"
+        ;;
+    info)
+        PKG="$2"
+        if [ -z "$PKG" ]; then
+            echo "usage: xbps-src info <package>"
+            exit 1
+        fi
+        ensure_void_packages
+        if [ -f "$VOID_PKGS_DIR/srcpkgs/$PKG/template" ]; then
+            cat "$VOID_PKGS_DIR/srcpkgs/$PKG/template"
+        else
+            echo "Package '$PKG' not found in void-packages"
+            exit 1
+        fi
+        ;;
+    install)
+        PKG="$2"
+        if [ -z "$PKG" ]; then
+            echo "usage: xbps-src install <package>"
+            exit 1
+        fi
+        ensure_void_packages
+        cd "$VOID_PKGS_DIR"
+        git pull --autostash --rebase
+        echo "Building $PKG..."
+        if ./xbps-src pkg "$PKG"; then
+            echo "Installing $PKG..."
+            if sudo $XBPS_INSTALL --repository=hostdir/binpkgs -y "$PKG"; then
+                track_installed "$PKG" add
+                echo "Successfully installed $PKG"
+            else
+                echo "Build succeeded but install failed"
+                exit 1
+            fi
+        else
+            echo "Failed to build $PKG"
+            exit 1
+        fi
+        ;;
+    remove)
+        PKG="$2"
+        if [ -z "$PKG" ]; then
+            echo "usage: xbps-src remove <package>"
+            exit 1
+        fi
+        if sudo $XBPS_REMOVE -y "$PKG"; then
+            track_installed "$PKG" remove
+            echo "Removed $PKG"
+        else
+            exit 1
+        fi
+        ;;
+    list)
+        SUB="${2:-available}"
+        case "$SUB" in
+            available)
+                ensure_void_packages
+                ls "$VOID_PKGS_DIR/srcpkgs/"
+                ;;
+            installed)
+                echo "Packages installed via xbps-src:"
+                if [ -f "$INSTALLED_LIST" ]; then
+                    while read -r pkg; do
+                        if $XBPS_QUERY "$pkg" &>/dev/null; then
+                            echo "$pkg"
+                        fi
+                    done < "$INSTALLED_LIST"
+                fi
+                # Also check xbps-query for any packages from hostdir/binpkgs
+                $XBPS_QUERY -l 2>/dev/null | while read -r line; do
+                    pkg=$(echo "$line" | awk '{print $2}' | sed 's/-[0-9].*//')
+                    repo=$($XBPS_QUERY -p repository "$pkg" 2>/dev/null)
+                    if echo "$repo" | grep -q "binpkgs"; then
+                        echo "$pkg (verified)"
+                    fi
+                done | sort -u
+                ;;
+            upgradable)
+                ensure_void_packages
+                cd "$VOID_PKGS_DIR"
+                ./xbps-src show-sys-updates 2>&1
+                ;;
+            *)
+                echo "usage: xbps-src list <available|installed|upgradable>"
+                exit 1
+                ;;
+        esac
+        ;;
+    update)
+        if [ ! -d "$VOID_PKGS_DIR" ]; then
+            ensure_void_packages
+        else
+            cd "$VOID_PKGS_DIR"
+            git pull --autostash --rebase
+            echo "void-packages updated"
+        fi
+        ;;
+    upgrade)
+        ensure_void_packages
+        cd "$VOID_PKGS_DIR"
+        git pull --autostash --rebase
+        if [ -f "$INSTALLED_LIST" ]; then
+            while read -r pkg; do
+                echo "Rebuilding $pkg..."
+                if ./xbps-src pkg "$pkg"; then
+                    sudo $XBPS_INSTALL --repository=hostdir/binpkgs -y "$pkg"
+                fi
+            done < "$INSTALLED_LIST"
+        else
+            echo "No packages tracked for upgrade"
+        fi
+        ;;
+    help|--help)
+        cat <<EOF
+xbps-src — Void Linux source package manager
+  xbps-src version              show version info
+  xbps-src info <pkg>           show template info
+  xbps-src install <pkg>        build + install from void-packages
+  xbps-src remove <pkg>         remove package
+  xbps-src list available       list all source packages
+  xbps-src list installed       list installed source packages
+  xbps-src list upgradable      check for template updates
+  xbps-src update               pull latest void-packages
+  xbps-src upgrade              rebuild all source packages
+EOF
+        ;;
+    *)
+        echo "unknown command: $1"
+        echo "run 'xbps-src help' for usage"
+        exit 1
+        ;;
+esac
