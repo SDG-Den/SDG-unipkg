@@ -1,5 +1,8 @@
 # unipkg
 
+TEMP NOTE: support for portage requires *eix* to be installed. 
+
+
 
 unipkg is a package manager agnostic wrapper that supports multiple package managers on one system. 
 
